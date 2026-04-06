@@ -13,3 +13,25 @@ Qua đó, các bức ảnh sẽ được chèn thêm các overlay bao gồm:
 Ở đây tôi sẽ phát triển fullstack một hệ thống giúp ghi nhận các ảnh được chụp từ nhiều địa điểm khác nhau, qua đó tracking lại thời gian và vị trí mà người đó đã di chuyển.
 Dùng database để lưu trữ lại các bức ảnh và thông tin.
 Thể hiện thông tin lên một bản đồ để quản lý.
+### Frontend
+* React
+npx create-react-app web/frontend -> npm install -> npm start
+
+* Leaflet / react-leaflet
+npm install leaflet react-leaflet
+
+06-04-26: Khởi động đã gặp bug giữa các phiên bản, bị version conflict, dependency, environment bug
+npm install react@18.2.0 react-dom@18.2.0
+npm install react-leaflet@4.2.1 leaflet@1.9.4
+
+### Backend
+* Node.js
+* Express.js
+* jsQR
+
+### Database
+* MongoDB
+
+### Kiến trúc hệ thống
+Frontend (React) - upload image -> Backend (Express) - decode QR, parse JSON, save MongoDB, return data -> Frontend - render map + marker -
+

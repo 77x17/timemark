@@ -1,0 +1,204 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.container {
+  max-width: 95%;
+  padding-top: 2%;
+  margin: auto;
+  font-family: Roboto, Arial, sans-serif;
+}
+
+/* Label giả button */
+.file-input-label {
+  padding: 8px 16px;
+  border-radius: 20px;
+
+  background: #e8f0fe; /* Google light blue */
+  color: #1a73e8;
+
+  font-weight: 500;
+  font-size: 14px;
+
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: all 0.2s ease;
+}
+
+/* Hover giống button */
+.file-input-label:hover {
+  background: #d2e3fc;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+
+/* Active (click) */
+.file-input-label:active {
+  transform: scale(0.97);
+}
+
+/* Align với upload-box */
+.upload-box {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+button {
+  padding: 8px 16px;
+  border: none;
+  background: #1a73e8; /* Google blue */
+  color: white;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 500;
+
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  background: #1669c1;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+/* Preview list giống thanh ảnh của Maps */
+.preview-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 100px);
+  gap: 10px;
+
+  overflow-x: auto;
+  padding: 10px;
+
+  margin-top: 10px;
+
+  background: white;
+  border-radius: 12px;
+
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* Item wrapper */
+.preview-item {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+/* Ảnh */
+.preview-img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+
+  border-radius: 12px;
+  cursor: pointer;
+
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.preview-img:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+
+/* ✅ FIX NÚT DELETE */
+.delete-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+
+  width: 11px;
+  height: 22px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  background: rgba(0,0,0,0.6);
+  color: white;
+  border: none;
+
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1; /* FIX lệch text */
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.delete-btn:hover {
+  background: #d93025; /* Google red */
+  transform: scale(1.1);
+}
+
+/* Map giống card */
+.map {
+  height: 600px;
+  border-radius: 12px;
+  margin-top: 10px;
+
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Popup giống Google Maps */
+.popup-box {
+  font-size: 13px;
+  line-height: 1.4;
+  font-family: Roboto, Arial, sans-serif;
+}
+
+/* Label marker */
+.marker-label {
+  background: #1a73e8;
+  color: white;
+
+  padding: 2px 6px;
+  border-radius: 8px;
+
+  font-size: 11px;
+  font-weight: 500;
+
+  border: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
