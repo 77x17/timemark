@@ -1,7 +1,7 @@
 import "./App.css";
 
 import { useState, useRef, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip, Polyline } from "react-leaflet";
 
 import L from "leaflet";
 
@@ -41,48 +41,118 @@ function App() {
   // { file, lat, lng, time }
   const [ items, setItems ] = useState([]);
   const mapRef = useRef();
-  const [ selectedIndex, setSelectedIndex ] = useState(null);
+  const [ selectedId, setSelectedId ] = useState(null);
 
-  const handleUpload = () => {
+  const createItem = (file) => ({
+    id: crypto.randomUUID(),
+    file,
+    lat: null,
+    lng: null,
+    time: null,
+    order: null,
+  });
+
+  const handleAddImages = (e) => {
+    const files = Array.from(e.target.files);
+
+    const newItems = files.map((file) => createItem(file));
+
+    setItems((prevItems) => [...prevItems, ...newItems]);
+  }
+
+  const handleDelete = (id) => {
+    setItems((prev) => {
+      const newItems = prev.filter(item => item.id !== id);
+
+      const newPositions = newItems
+        .filter(item => item.lat != null && item.lng != null)
+        .map(item => [item.lat, item.lng]);
+
+      if (newPositions.length >= 2) {
+        fetchRoute(newPositions).then(setRoute);
+      } else {
+        setRoute([]);
+      }
+
+      return newItems;
+    });
+
+    setSelectedId((prev) => (prev === id ? null : prev));
+  };
+
+  const handleUpload = async () => {
     if (items.length === 0) {
       alert("Chưa chọn ảnh!");
       return;
     }
 
-    const newItems = items.map((item, index) => ({
-      ...item,
-      lat: 10.7769 + Math.random() * 0.01,
-      lng: 106.7009 + Math.random() * 0.01,
-      time: new Date().toISOString(),
-      order: index + 1,
-    }));
+    try {
+      const formData = new FormData();
 
-    setItems(newItems);
+      items.forEach((item) => {
+        formData.append("images", item.file);
+      });
+
+      const res = await fetch("http://localhost:8080/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await res.json();
+      if (!result.success) {
+        alert("Upload thất bại!");
+        return;
+      }
+
+      const newItems = items.map((item, index) => ({
+        ...item,
+        lat: result.data[index].lat,
+        lng: result.data[index].lng,
+        time: result.data[index].time,
+        order: result.data[index].order,
+      }));
+
+      newItems.sort((a, b) => {
+        if (a.order == null) return 1;
+        if (b.order == null) return -1;
+        return a.order - b.order;
+      });
+
+      setItems(newItems);
+
+      const newPositions = newItems
+      .filter(item => item.lat != null && item.lng != null)
+      .map(item => [item.lat, item.lng]);
+
+      if (newPositions.length >= 2) {
+        const route = await fetchRoute(newPositions);
+        setRoute(route);
+      } else {
+        setRoute([]);
+      }
+    }
+    catch (err) {
+      console.log(err);
+      alert("Lỗi khi upload");
+    }
   };
 
-  const handleAddImages = (e) => {
-    const files = Array.from(e.target.files);
+  const positions = items
+    .filter(item => item.lat != null && item.lng != null)
+    .map(item => [item.lat, item.lng]);
 
-    const newItems = files.map((file) => ({
-      file,
-      lat: null,
-      lng: null,
-      time: null,
-      order: null,
-    }));
+  const [route, setRoute] = useState([]);
 
-    setItems((prevItems) => [...prevItems, ...newItems]);
+  async function fetchRoute(positions) {
+    const coords = positions.map(p => `${p[1]},${p[0]}`).join(";");
+
+    const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    return data.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
   }
-
-  const handleDelete = (deleteIndex) => {
-    setItems((prev) => prev.filter((_, i) => i !== deleteIndex));
-
-    setSelectedIndex((prev) => {
-      if (prev === deleteIndex) return null;
-      if (prev > deleteIndex) return prev - 1;
-      return prev;
-    });
-  };
 
   return (
     <div className = "container">
@@ -101,26 +171,24 @@ function App() {
       </div>
       
       <div className = "preview-list">
-        { items.map((item, index) => (
-          <div key = {index} className = "preview-item">
+        { items.map((item) => (
+          <div key = {item.id} className = "preview-item">
             <img 
               src = {URL.createObjectURL(item.file)}
               alt = "preview"
               className = "preview-img"
               onClick = {() => {
-                console.log("mapRef:", mapRef.current.getCenter());
-                console.log("item: ", item);
                 if (item.lat != null && mapRef.current) {
                   const center = mapRef.current.getCenter();
                   const isSame = 
                     Math.abs(center.lat - item.lat) < 0.0001 && 
                     Math.abs(center.lng - item.lng) < 0.0001 && 
-                    selectedIndex != null;
+                    selectedId === item.id;
 
                   if (isSame) return;
 
                   mapRef.current.flyTo([item.lat, item.lng], 16, { duration: 1 });
-                  setSelectedIndex(index);
+                  setSelectedId(item.id);
                 }
               }}
             />
@@ -129,7 +197,7 @@ function App() {
               className = "delete-btn"
               onClick = {(e) => {
                 e.stopPropagation();
-                handleDelete(index);
+                handleDelete(item.id);
               }}
             >✕</button>
           </div>
@@ -145,13 +213,14 @@ function App() {
           <MapController mapRef = {mapRef}/>
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-          { items.map((item, index) => ( item.lat != null && 
+          {/* Marker */}
+          { items.map((item) => ( item.lat != null && 
             <Marker
-              key = {index}
+              key = {item.id}
               position={[item.lat, item.lng]}
-              icon = {index === selectedIndex ? redIcon : defaultIcon }
+              icon = {item.id === selectedId ? redIcon : defaultIcon }
               ref = {(ref) => {
-                if (ref && index === selectedIndex) {
+                if (ref && item.id === selectedId) {
                   ref.openPopup();
                 }
               }}
@@ -173,11 +242,16 @@ function App() {
                   />
                   <p><b>Lat : </b>{ item.lat.toFixed(6) }</p>
                   <p><b>Lng : </b>{ item.lng.toFixed(6) }</p>
-                  <p><b>Time: </b>{ new Date(item.time).toLocaleTimeString() }</p>
+                  <p><b>Time: </b>{ new Date(item.time).toLocaleString('vi-VN') }</p>
                 </div>
               </Popup>
             </Marker>
           ))}
+
+          {/* Line */}
+          { route.length > 0 && (
+            <Polyline positions = {route} color = "blue" weight = "10"/>
+          )}
         </MapContainer>
       )}
     </div>
