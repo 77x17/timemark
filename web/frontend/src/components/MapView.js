@@ -4,8 +4,8 @@ import MapController from "./MapController";
 
 import { defaultIcon, redIcon } from "../utils/leafletIcons";
 
-function MapView({ points, mapRef, selectedId, route }) {
-  if (points.length <= 0 || points[0].lat === null || points[0].lng === null) return;
+function MapView({ points, mapRef, selectedId, setSelectedId, route }) {
+  if (points.length <= 0 || points[0].lat == null || points[0].lng == null) return;
 
   return (
     <MapContainer
@@ -17,9 +17,9 @@ function MapView({ points, mapRef, selectedId, route }) {
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
       {/* Marker */}
-      { points.map((point) => ( point.lat !== null && point.lng !== null &&
+      { points.map((point) => ( point.lat != null && point.lng != null &&
         <Marker
-          // key = { point.id }
+          key = { point.id }
           position = {[ point.lat, point.lng ]}
           icon = { point.id === selectedId ? redIcon : defaultIcon }
           ref = { (ref) => {
@@ -27,18 +27,29 @@ function MapView({ points, mapRef, selectedId, route }) {
               ref.openPopup();
             }
           }}
+          eventHandlers = {{
+            click: () => {
+              setSelectedId(point.id)
+            }
+          }}
         >
-          <Tooltip
+          { points.length > 1 && 
+            <Tooltip
+              permanent
+              direction="top"
+              offset = {[0, -40]}
+              className = "marker-label"
+            >
+              {point.order}
+            </Tooltip>
+          }
+          <Popup
             permanent
             direction="top"
-            offset = {[0, -40]}
-            className = "marker-label"
+            offset = {[0, -30]}
           >
-            {point.order}
-          </Tooltip>
-          <Popup>
             <div className = "popup-box">
-              { point.imageUrl !== null &&
+              { point.imageUrl != null &&
                 <img
                   src = { point.imageUrl }
                   alt = "preview"
@@ -47,7 +58,9 @@ function MapView({ points, mapRef, selectedId, route }) {
               }
               <p><b>Lat : </b>{ point.lat.toFixed(6) }</p>
               <p><b>Lng : </b>{ point.lng.toFixed(6) }</p>
-              <p><b>Time: </b>{ new Date(point.time).toLocaleString('vi-VN') }</p>
+              { point.time != null && 
+                <p><b>Time: </b>{ new Date(point.time).toLocaleString('vi-VN') }</p>
+              }
             </div>
           </Popup>
         </Marker>

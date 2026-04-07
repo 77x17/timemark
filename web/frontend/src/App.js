@@ -1,6 +1,6 @@
 import "./App.css";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 import UploadBox   from "./components/UploadBox";
 import PreviewList from "./components/PreviewList";
@@ -16,7 +16,8 @@ function App() {
   const [ items     , setItems      ] = useState([]);
   const [ selectedId, setSelectedId ] = useState(null);
   const [ route     , setRoute      ] = useState([]);
-  
+  const [ points    , setPoints     ] = useState([]);
+  const [ mapUrl    , setMapUrl     ] = useState(null);
   const mapRef = useRef();
 
   const handleAddImages = (e) => {
@@ -60,6 +61,13 @@ function App() {
         return;
       }
 
+      const pointsString = result.data
+        .map(point => `${point.lat},${point.lng},${point.time},${point.order}`)
+        .join(";");
+      
+      const newMapUrl = `http://localhost:3000/?points=${pointsString}`;
+      setMapUrl(newMapUrl);
+
       const newItems = items.map((item, index) => ({
         ...item,
         lat: result.data[index].lat,
@@ -93,6 +101,63 @@ function App() {
     }
   };
 
+  // Dùng url có ?points=lat,lng,time,order;... để truy cập map
+  useEffect( () => {
+    const asyncRun = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const raw = params.get("points");
+      
+      if (!raw) return;
+
+      const parsed = raw
+        .split(";")
+        .map((pair, index) => {
+          const [ lat, lng, time, order ] = pair.split(",");
+          return { 
+            id   : index,
+            lat  : parseFloat(lat), 
+            lng  : parseFloat(lng),
+            time : time,
+            order: order,
+          };
+        })
+        .filter(p => !isNaN(p.lat) && !isNaN(p.lng));
+      
+      parsed.sort((a, b) => {
+        if (a.order == null) return 1;
+        if (b.order == null) return -1;
+        return a.order - b.order;
+      });
+
+      setPoints(parsed);
+
+      const newPositions = parsed.map(point => [ point.lat, point.lng ]);
+
+      if (newPositions.length >= 2) {
+        const route = await fetchRoute(newPositions);
+        setRoute(route);
+      } else {
+        setRoute([]);
+      }
+    }
+
+    asyncRun();
+  }, []);
+
+  // Nếu trích xuất được points từ url thì vẽ map không
+  if (points.length >= 1) {
+    return (
+      <MapView
+        points = { points }
+        mapRef = { mapRef }
+        route = { route }
+        selectedId = { selectedId }
+        setSelectedId = { setSelectedId }
+      />
+    );
+  }
+
+  // Default 
   return (
     <div className = "container">
       <UploadBox
@@ -108,6 +173,10 @@ function App() {
         handleDelete = { handleDelete }
       />
 
+      { mapUrl != null && 
+        <label> { mapUrl.toString() } </label>
+      }
+
       <MapView
         points = { items.map(item => ({
           id      : item.id,
@@ -120,6 +189,7 @@ function App() {
         mapRef = { mapRef }
         route = { route }
         selectedId = { selectedId }
+        setSelectedId = { setSelectedId }
       />
     </div>
   );
