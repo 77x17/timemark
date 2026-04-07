@@ -1,56 +1,23 @@
 import "./App.css";
 
-import { useState, useRef, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip, Polyline } from "react-leaflet";
+import { useState, useRef } from "react";
 
-import L from "leaflet";
+import UploadBox   from "./components/UploadBox";
+import PreviewList from "./components/PreviewList";
+import MapView     from "./components/MapView";
 
-delete L.Icon.Default.prototype._getIconUrl;
+import { fetchRoute }   from "./api/fetchRoute";
+import { uploadImages } from "./api/uploadImages";
 
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: require("leaflet/dist/images/marker-icon-2x.png"),
-  iconUrl: require("leaflet/dist/images/marker-icon.png"),
-  shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
-});
-
-const defaultIcon = new L.Icon({
-  iconUrl: require("leaflet/dist/images/marker-icon.png"),
-  shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
-
-const redIcon = new L.Icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
-  shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
-
-function MapController({ mapRef }) {
-  const map = useMap();
-
-  useEffect(() => {
-    mapRef.current = map;
-  }, [map]);
-
-  return null;
-}
+import { createItem } from "./utils/createItem";
 
 function App() {
-  // { file, lat, lng, time }
-  const [ items, setItems ] = useState([]);
-  const mapRef = useRef();
+  // { id, file, lat, lng, time, order }
+  const [ items     , setItems      ] = useState([]);
   const [ selectedId, setSelectedId ] = useState(null);
-
-  const createItem = (file) => ({
-    id: crypto.randomUUID(),
-    file,
-    lat: null,
-    lng: null,
-    time: null,
-    order: null,
-  });
+  const [ route     , setRoute      ] = useState([]);
+  
+  const mapRef = useRef();
 
   const handleAddImages = (e) => {
     const files = Array.from(e.target.files);
@@ -87,18 +54,7 @@ function App() {
     }
 
     try {
-      const formData = new FormData();
-
-      items.forEach((item) => {
-        formData.append("images", item.file);
-      });
-
-      const res = await fetch("http://localhost:8080/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      const result = await res.json();
+      const result = await uploadImages(items);
       if (!result.success) {
         alert("Upload thất bại!");
         return;
@@ -121,8 +77,8 @@ function App() {
       setItems(newItems);
 
       const newPositions = newItems
-      .filter(item => item.lat != null && item.lng != null)
-      .map(item => [item.lat, item.lng]);
+        .filter(item => item.lat != null && item.lng != null)
+        .map(item => [item.lat, item.lng]);
 
       if (newPositions.length >= 2) {
         const route = await fetchRoute(newPositions);
@@ -137,123 +93,34 @@ function App() {
     }
   };
 
-  const positions = items
-    .filter(item => item.lat != null && item.lng != null)
-    .map(item => [item.lat, item.lng]);
-
-  const [route, setRoute] = useState([]);
-
-  async function fetchRoute(positions) {
-    const coords = positions.map(p => `${p[1]},${p[0]}`).join(";");
-
-    const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
-
-    const res = await fetch(url);
-    const data = await res.json();
-
-    return data.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
-  }
-
   return (
     <div className = "container">
-      <div className = "upload-box">
-        <label className="file-input-label">
-          Select Images
-          <input
-            type="file"
-            multiple
-            onChange={handleAddImages}
-            hidden
-          />
-        </label>
-
-        <button onClick = {handleUpload}>Upload</button>
-      </div>
+      <UploadBox
+        onAddImages = { handleAddImages }
+        onUpload = { handleUpload }
+      />
       
-      <div className = "preview-list">
-        { items.map((item) => (
-          <div key = {item.id} className = "preview-item">
-            <img 
-              src = {URL.createObjectURL(item.file)}
-              alt = "preview"
-              className = "preview-img"
-              onClick = {() => {
-                if (item.lat != null && mapRef.current) {
-                  const center = mapRef.current.getCenter();
-                  const isSame = 
-                    Math.abs(center.lat - item.lat) < 0.0001 && 
-                    Math.abs(center.lng - item.lng) < 0.0001 && 
-                    selectedId === item.id;
+      <PreviewList
+        items = { items }
+        selectedId = { selectedId }
+        setSelectedId = { setSelectedId }
+        mapRef = { mapRef }
+        handleDelete = { handleDelete }
+      />
 
-                  if (isSame) return;
-
-                  mapRef.current.flyTo([item.lat, item.lng], 16, { duration: 1 });
-                  setSelectedId(item.id);
-                }
-              }}
-            />
-
-            <button
-              className = "delete-btn"
-              onClick = {(e) => {
-                e.stopPropagation();
-                handleDelete(item.id);
-              }}
-            >✕</button>
-          </div>
-        ))}
-      </div>
-
-      { items.length > 0 && items[0].lat && (
-        <MapContainer
-          center={[items[0].lat, items[0].lng]}
-          zoom={13}
-          className = "map"
-        >
-          <MapController mapRef = {mapRef}/>
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-
-          {/* Marker */}
-          { items.map((item) => ( item.lat != null && 
-            <Marker
-              key = {item.id}
-              position={[item.lat, item.lng]}
-              icon = {item.id === selectedId ? redIcon : defaultIcon }
-              ref = {(ref) => {
-                if (ref && item.id === selectedId) {
-                  ref.openPopup();
-                }
-              }}
-            >
-              <Tooltip
-                permanent
-                direction="top"
-                offset = {[0, -40]}
-                className = "marker-label"
-              >
-                {item.order}
-              </Tooltip>
-              <Popup>
-                <div className = "popup-box">
-                  <img
-                    src={URL.createObjectURL(item.file)}
-                    alt="preview"
-                    style={{ width: "100px" }}
-                  />
-                  <p><b>Lat : </b>{ item.lat.toFixed(6) }</p>
-                  <p><b>Lng : </b>{ item.lng.toFixed(6) }</p>
-                  <p><b>Time: </b>{ new Date(item.time).toLocaleString('vi-VN') }</p>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-
-          {/* Line */}
-          { route.length > 0 && (
-            <Polyline positions = {route} color = "blue" weight = "10"/>
-          )}
-        </MapContainer>
-      )}
+      <MapView
+        points = { items.map(item => ({
+          id      : item.id,
+          lat     : item.lat,
+          lng     : item.lng,
+          time    : item.time,
+          order   : item.order,
+          imageUrl: item.file ? URL.createObjectURL(item.file) : null,
+        }))}
+        mapRef = { mapRef }
+        route = { route }
+        selectedId = { selectedId }
+      />
     </div>
   );
 }

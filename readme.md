@@ -27,6 +27,8 @@ npm install leaflet react-leaflet
 npm install react@18.2.0 react-dom@18.2.0
 npm install react-leaflet@4.2.1 leaflet@1.9.4
 
+07-04-26: Refactor code
+
 Chạy frontend: **npm start**
 
 ### Backend
@@ -37,8 +39,11 @@ Chạy frontend: **npm start**
 * Sharp (convert image)
 * cors: Cross-Origin-Resource Sharing: Chia sẻ tài nguyên đa nguồn gốc
 npm init -y --> npm install express multer ~~jsqr~~ @zxing/library sharp cors
+* nodemon: Tự động restart server khi sửa code.
 
-Chạy backend: **node server.js**
+Chạy backend: **npm run dev**
+
+npm install -D nodemon
 
 Thêm Authentication (Xác thực - Login/Register) để Authorization (Ủy quyền - Xác định quyền truy cập)
 
