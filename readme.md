@@ -27,7 +27,7 @@ npm install leaflet react-leaflet
 npm install react@18.2.0 react-dom@18.2.0
 npm install react-leaflet@4.2.1 leaflet@1.9.4
 
-07-04-26: Refactor code
+07-04-26: Refactor code và tạo được useEffect khi mở url có points thì vẽ map với dữ liệu lọc được.
 
 Chạy frontend: **npm start**
 
