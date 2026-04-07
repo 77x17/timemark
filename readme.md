@@ -8,11 +8,14 @@ Qua đó, các bức ảnh sẽ được chèn thêm các overlay bao gồm:
 * QR
 * Watermark
 
+Chạy mobile debug: **npx expo start**
+
 ## Web applications
 
 Ở đây tôi sẽ phát triển fullstack một hệ thống giúp ghi nhận các ảnh được chụp từ nhiều địa điểm khác nhau, qua đó tracking lại thời gian và vị trí mà người đó đã di chuyển.
 Dùng database để lưu trữ lại các bức ảnh và thông tin.
 Thể hiện thông tin lên một bản đồ để quản lý.
+
 ### Frontend
 * React
 npx create-react-app web/frontend -> npm install -> npm start
@@ -24,7 +27,7 @@ npm install leaflet react-leaflet
 npm install react@18.2.0 react-dom@18.2.0
 npm install react-leaflet@4.2.1 leaflet@1.9.4
 
-npm start
+Chạy frontend: **npm start**
 
 ### Backend
 * Node.js
@@ -35,7 +38,9 @@ npm start
 * cors: Cross-Origin-Resource Sharing: Chia sẻ tài nguyên đa nguồn gốc
 npm init -y --> npm install express multer ~~jsqr~~ @zxing/library sharp cors
 
-node server.js
+Chạy backend: **node server.js**
+
+Thêm Authentication (Xác thực - Login/Register) để Authorization (Ủy quyền - Xác định quyền truy cập)
 
 ### Database
 * MongoDB

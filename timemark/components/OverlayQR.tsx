@@ -24,11 +24,14 @@ export default function OverlayQR({ coords, time, containerWidth }: Props) {
   return (
     // Thêm style cho view để cố định vị trí góc dưới bên phải
     <View style={[styles.container, { right: 12, bottom: 72 }]}>
-      <QRCode
-        value={data}
-        size={containerWidth * 0.18}
-        backgroundColor="white"
-      />
+      <View style = {styles.qrWrapper}>
+        <QRCode
+          value={data}
+          size={containerWidth * 0.18}
+          backgroundColor="white"
+          quietZone = {2}
+        />
+      </View>
       <Text style={styles.text} numberOfLines={1}>
         {'100% Chân thực'}
       </Text>
@@ -41,6 +44,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     // align các phần tử con (QR và Text) sát lề phải của container
     alignItems: 'flex-end', 
+  },
+  qrWrapper: {
+    backgroundColor: '#fff', // Màu nền trắng tạo viền
+    padding: 6,             // Độ dày của viền trắng
+    borderRadius: 8,        // Bo góc nhẹ cho viền trông hiện đại hơn
+    // Đổ bóng để QR nổi bật trên nền ảnh (tùy chọn)
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   text: {
     color: '#fff',
