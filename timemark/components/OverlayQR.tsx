@@ -15,11 +15,13 @@ export default function OverlayQR({ coords, time, containerWidth }: Props) {
 
   if (!settings.showQR || !coords) return null;
 
-  const data = JSON.stringify({
-    lat: coords.lat,
-    lng: coords.lng,
-    time: time.toISOString(),
-  });
+  // const data = JSON.stringify({
+  //   lat: coords.lat,
+  //   lng: coords.lng,
+  //   time: time.toISOString(),
+  // });
+
+  const data = `http://192.168.1.33:3000/?points=${coords.lat},${coords.lng},${time.toISOString()},1`;
 
   return (
     // Thêm style cho view để cố định vị trí góc dưới bên phải
