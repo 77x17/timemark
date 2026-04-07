@@ -302,7 +302,13 @@ export default function CameraScreen() {
               : <View style={styles.shutterInner} />}
           </TouchableOpacity>
 
-          <View style={styles.iconBtn} />
+          <TouchableOpacity
+            style={styles.iconBtn}
+            onPress={() => router.push("/gallery-upload")}
+            activeOpacity={0.75}
+          >
+            <Text style={styles.iconBtnText}>🖼️</Text>
+          </TouchableOpacity>
         </View>
 
       </View>
