@@ -4,8 +4,16 @@ import MapController from "./MapController";
 
 import { defaultIcon, redIcon } from "../utils/leafletIcons";
 
-function MapView({ points, mapRef, selectedId, setSelectedId, route }) {
-  if (points.length <= 0 || points[0].lat == null || points[0].lng == null) return;
+function MapView({ points, mapRef, selectedId, setSelectedId, routes }) {
+  if (points.length <= 0 || points[0].lat == null || points[0].lng == null) return null;
+
+  const colors = ["red", "blue", "green", "orange", "purple", "black"];
+
+  function getColor(index) {
+    return colors[index % colors.length];
+  }
+
+  const selectedDevice = points.find(point => point.id === selectedId)?.deviceId ?? null;
 
   return (
     <MapContainer
@@ -13,7 +21,12 @@ function MapView({ points, mapRef, selectedId, setSelectedId, route }) {
       zoom = {13}
       className = "map"
     >
-      <MapController mapRef = { mapRef }/>
+      <MapController 
+        mapRef = { mapRef }
+        points = { points }
+        routes = { routes }
+        selectedId = { selectedId }
+      />
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
       {/* Marker */}
@@ -67,9 +80,26 @@ function MapView({ points, mapRef, selectedId, setSelectedId, route }) {
       ))}
 
       {/* Line */}
-      { route.length > 0 && (
-        <Polyline positions = {route} color = "blue" weight = "10"/>
-      )}
+      {/* { routes && routes.length > 0 && (
+        <Polyline positions = {route} color = "blue" weight = "8"/>
+      )} */}
+      { routes && Object.keys(routes).map(( deviceId, index ) => {
+        const route = routes[deviceId];
+
+        if (!route || route.length === 0) return null;
+
+        return (
+          <Polyline
+            key = { deviceId }
+            positions = { route }
+            pathOptions={{
+              color  : getColor(index),
+              opacity: selectedDevice === deviceId ? 0.9 : 0.7,
+              weight : selectedDevice === deviceId ? 8 : 5
+            }}
+          />
+        );
+      })}
     </MapContainer>
   );
 }

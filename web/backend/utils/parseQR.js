@@ -5,12 +5,13 @@ function parseQRData(raw) {
     const pointStr = url.searchParams.get("points");
     if (!pointStr) return null;
 
-    const [ lat, lng, time ] = pointStr.split(",");
+    const [ lat, lng, time, order, deviceId ] = pointStr.split(",");
 
     return {
       lat: parseFloat(lat),
       lng: parseFloat(lng),
-      time: time
+      time: time,
+      deviceId: deviceId,
     };
 
   } catch {

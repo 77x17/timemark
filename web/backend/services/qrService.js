@@ -105,13 +105,23 @@ async function processImages(files) {
   let sorted = [...indexed].sort((a, b) => a.time.localeCompare(b.time));
 
   let indexOrder = [];
+  let deviceCounters = {};
   sorted.forEach((item, order) => {
-    indexOrder[item.originalIndex] = { order };
+    const id = item.deviceId;
+
+    if (!deviceCounters[id]) {
+      deviceCounters[id] = 1;
+    }
+    else {
+      ++deviceCounters[id];
+    }
+
+    indexOrder[item.originalIndex] = { order: deviceCounters[id] };
   });
 
   return results.map((item, index) => ({
     ...item,
-    order: indexOrder[index].order + 1,
+    order: indexOrder[index].order,
   }));
 }
 

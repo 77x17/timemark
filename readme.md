@@ -53,3 +53,9 @@ Thêm Authentication (Xác thực - Login/Register) để Authorization (Ủy qu
 ### Kiến trúc hệ thống
 Frontend (React) - upload image -> Backend (Express) - decode QR, parse JSON, save MongoDB, return data -> Frontend - render map + marker -
 
+## Tiến độ:
+
+06-04-2026: Bắt đầu cài đặt
+07-04-2026: 
+- Sửa qr từ lưu object lat lng time thành url để mở web demo
+- Thêm chức năng thôi nào.

@@ -3,6 +3,8 @@
 import { View, Text, StyleSheet } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { useSettings } from '../context/SettingsContext';
+import * as Application from 'expo-application';
+import { useEffect, useState } from 'react';
 
 type Props = {
   coords: { lat: number; lng: number } | null;
@@ -12,8 +14,7 @@ type Props = {
 
 export default function OverlayQR({ coords, time, containerWidth }: Props) {
   const { settings } = useSettings();
-
-  if (!settings.showQR || !coords) return null;
+  const [ deviceId, setDeviceId ] = useState<string>("unknown");
 
   // const data = JSON.stringify({
   //   lat: coords.lat,
@@ -21,7 +22,28 @@ export default function OverlayQR({ coords, time, containerWidth }: Props) {
   //   time: time.toISOString(),
   // });
 
-  const data = `http://192.168.1.33:3000/?points=${coords.lat},${coords.lng},${time.toISOString()},1`;
+  useEffect(() => {
+    const getId = async () => {
+      try {
+        if (Application.getAndroidId()) {
+          setDeviceId(Application.getAndroidId());
+        } 
+        else if (Application.getIosIdForVendorAsync) {
+          const iosId = await Application.getIosIdForVendorAsync();
+          setDeviceId(iosId || "unknown");
+        }
+      } catch (err) {
+        console.log("DeviceId error:", err);
+        setDeviceId("unknown");
+      }
+    };
+
+    getId();
+  }, []);
+
+  if (!settings.showQR || !coords) return null;
+
+  const data = `http://192.168.1.33:3000/?points=${coords.lat},${coords.lng},${time.toISOString()},1,${deviceId}`;
 
   return (
     // Thêm style cho view để cố định vị trí góc dưới bên phải

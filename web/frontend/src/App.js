@@ -12,10 +12,11 @@ import { uploadImages } from "./api/uploadImages";
 import { createItem } from "./utils/createItem";
 
 function App() {
-  // { id, file, lat, lng, time, order }
+  // { id, file, lat, lng, time, order, deviceId }
   const [ items     , setItems      ] = useState([]);
   const [ selectedId, setSelectedId ] = useState(null);
-  const [ route     , setRoute      ] = useState([]);
+  // const [ route     , setRoute      ] = useState([]);
+  const [ routes    , setRoutes     ] = useState({});
   const [ points    , setPoints     ] = useState([]);
   const [ mapUrl    , setMapUrl     ] = useState(null);
   const mapRef = useRef();
@@ -28,19 +29,48 @@ function App() {
     setItems((prevItems) => [...prevItems, ...newItems]);
   }
 
+  const generateRoutes = (newItems) => {
+    const validItems = newItems.filter(item => item.lat != null && item.lng != null);
+    const positionsByDevice = {};
+    validItems.forEach(item => {
+      const deviceId = item.deviceId;
+
+      if (!positionsByDevice[deviceId]) {
+        positionsByDevice[deviceId] = [];
+      }
+
+      positionsByDevice[deviceId].push([ item.lat, item.lng ]);
+    });
+
+    // map + async để duyệt từng device bất đồng bộ
+    const routePromises = Object.keys(positionsByDevice).map(async (deviceId) => {
+      const positions = positionsByDevice[deviceId];
+      if (positions.length < 2) {
+        return { deviceId, route: [] };
+      }
+
+      const route = await fetchRoute(positions);
+      return { deviceId, route };
+    })
+
+    // Chạy song song tất cả request
+    // Promise.all trả về mảng nên phải build lại thành object
+    Promise.all(routePromises).then(results => {
+      const routesObj = {};
+
+      results.forEach(({ deviceId, route }) => {
+        routesObj[deviceId] = route;
+      })
+
+      setRoutes(routesObj);
+    });
+  }
+
   const handleDelete = (id) => {
     setItems((prev) => {
       const newItems = prev.filter(item => item.id !== id);
 
-      const newPositions = newItems
-        .filter(item => item.lat != null && item.lng != null)
-        .map(item => [item.lat, item.lng]);
-
-      if (newPositions.length >= 2) {
-        fetchRoute(newPositions).then(setRoute);
-      } else {
-        setRoute([]);
-      }
+      generateRoutes(newItems);
 
       return newItems;
     });
@@ -62,7 +92,7 @@ function App() {
       }
 
       const pointsString = result.data
-        .map(point => `${point.lat},${point.lng},${point.time},${point.order}`)
+        .map(point => `${point.lat},${point.lng},${point.time},${point.order},${point.deviceId}`)
         .join(";");
       
       const newMapUrl = `http://localhost:3000/?points=${pointsString}`;
@@ -70,10 +100,11 @@ function App() {
 
       const newItems = items.map((item, index) => ({
         ...item,
-        lat: result.data[index].lat,
-        lng: result.data[index].lng,
-        time: result.data[index].time,
-        order: result.data[index].order,
+        lat     : result.data[index].lat,
+        lng     : result.data[index].lng,
+        time    : result.data[index].time,
+        order   : result.data[index].order,
+        deviceId: result.data[index].deviceId,
       }));
 
       newItems.sort((a, b) => {
@@ -82,18 +113,15 @@ function App() {
         return a.order - b.order;
       });
 
+      newItems.sort((a, b) => {
+        const idA = a?.deviceId || "";
+        const idB = b?.deviceId || "";
+        return idA.localeCompare(idB);
+      });
+
       setItems(newItems);
 
-      const newPositions = newItems
-        .filter(item => item.lat != null && item.lng != null)
-        .map(item => [item.lat, item.lng]);
-
-      if (newPositions.length >= 2) {
-        const route = await fetchRoute(newPositions);
-        setRoute(route);
-      } else {
-        setRoute([]);
-      }
+      generateRoutes(newItems);
     }
     catch (err) {
       console.log(err);
@@ -112,13 +140,14 @@ function App() {
       const parsed = raw
         .split(";")
         .map((pair, index) => {
-          const [ lat, lng, time, order ] = pair.split(",");
+          const [ lat, lng, time, order, deviceId ] = pair.split(",");
           return { 
-            id   : index,
-            lat  : parseFloat(lat), 
-            lng  : parseFloat(lng),
-            time : time,
-            order: order,
+            id      : index,
+            lat     : parseFloat(lat), 
+            lng     : parseFloat(lng),
+            time    : time,
+            order   : order,
+            deviceId: deviceId,
           };
         })
         .filter(p => !isNaN(p.lat) && !isNaN(p.lng));
@@ -131,14 +160,7 @@ function App() {
 
       setPoints(parsed);
 
-      const newPositions = parsed.map(point => [ point.lat, point.lng ]);
-
-      if (newPositions.length >= 2) {
-        const route = await fetchRoute(newPositions);
-        setRoute(route);
-      } else {
-        setRoute([]);
-      }
+      generateRoutes(parsed);
     }
 
     asyncRun();
@@ -150,7 +172,7 @@ function App() {
       <MapView
         points = { points }
         mapRef = { mapRef }
-        route = { route }
+        routes = { routes }
         selectedId = { selectedId }
         setSelectedId = { setSelectedId }
       />
@@ -187,7 +209,7 @@ function App() {
           imageUrl: item.file ? URL.createObjectURL(item.file) : null,
         }))}
         mapRef = { mapRef }
-        route = { route }
+        routes = { routes }
         selectedId = { selectedId }
         setSelectedId = { setSelectedId }
       />
